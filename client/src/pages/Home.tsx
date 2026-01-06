@@ -142,7 +142,7 @@ export default function Home() {
           {options.map((opt) => {
             const isSelected = myResponse?.selection === opt.label;
             const isCorrect = currentQuiz.correctAnswer === opt.label;
-            const showResult = state?.isResultRevealed;
+            const showResult = !!state?.isResultRevealed;
             
             // Determine visual state
             let buttonClass = cn(

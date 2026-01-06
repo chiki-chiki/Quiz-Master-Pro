@@ -12,7 +12,7 @@ export default function Projector() {
   const { data: initialLeaderboard } = useGameState(); // We'll use a separate state for leaderboard
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
 
-  useWebSocket((message) => {
+  useWebSocket((message: WsMessage) => {
     if (message.type === WS_EVENTS.SCORE_UPDATE) {
       setLeaderboard(message.payload as User[]);
     }

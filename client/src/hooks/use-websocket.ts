@@ -4,13 +4,12 @@ import { useToast } from './use-toast';
 import { api } from '@shared/routes';
 import { WS_EVENTS, type WsMessage } from '@shared/schema';
 
-export function useWebSocket() {
+export function useWebSocket(onMessage?: (message: WsMessage) => void) {
   const socketRef = useRef<WebSocket | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Determine WS protocol based on current page protocol
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
 
@@ -26,10 +25,15 @@ export function useWebSocket() {
         try {
           const message: WsMessage = JSON.parse(event.data);
           
+          if (onMessage) {
+            onMessage(message);
+          }
+
           switch (message.type) {
             case WS_EVENTS.STATE_UPDATE:
               queryClient.invalidateQueries({ queryKey: [api.state.get.path] });
               queryClient.invalidateQueries({ queryKey: [api.responses.list.path] });
+              queryClient.invalidateQueries({ queryKey: ["/api/leaderboard"] });
               break;
               
             case WS_EVENTS.QUIZ_UPDATE:
@@ -41,8 +45,11 @@ export function useWebSocket() {
               break;
               
             case WS_EVENTS.USER_JOIN:
-              // Optionally show a toast or just refresh user lists if we had one
               queryClient.invalidateQueries({ queryKey: [api.responses.list.path] });
+              break;
+
+            case WS_EVENTS.SCORE_UPDATE:
+              // Handled by onMessage in components if needed
               break;
           }
         } catch (err) {
@@ -67,5 +74,5 @@ export function useWebSocket() {
         socketRef.current.close();
       }
     };
-  }, [queryClient, toast]);
+  }, [queryClient, toast, onMessage]);
 }
