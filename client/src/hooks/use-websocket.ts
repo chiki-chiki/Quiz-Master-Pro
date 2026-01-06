@@ -49,7 +49,7 @@ export function useWebSocket(onMessage?: (message: WsMessage) => void) {
               break;
 
             case WS_EVENTS.SCORE_UPDATE:
-              // Handled by onMessage in components if needed
+              queryClient.invalidateQueries({ queryKey: ["/api/leaderboard"] });
               break;
           }
         } catch (err) {

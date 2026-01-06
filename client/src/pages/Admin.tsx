@@ -14,7 +14,7 @@ import { Quiz, User, WS_EVENTS } from "@shared/schema";
 
 export default function Admin() {
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
-  useWebSocket((message: WsMessage) => {
+  useWebSocket((message) => {
     if (message.type === WS_EVENTS.SCORE_UPDATE) {
       setLeaderboard(message.payload as User[]);
     }
