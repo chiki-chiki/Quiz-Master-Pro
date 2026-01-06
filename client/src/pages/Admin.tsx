@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuizzes, useCreateQuiz, useDeleteQuiz, useUpdateQuiz } from "@/hooks/use-quizzes";
 import { useGameState, useUpdateGameState } from "@/hooks/use-game-state";
 import { useWebSocket } from "@/hooks/use-websocket";
@@ -9,11 +9,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Play, Eye, EyeOff, Plus, Trash2, Edit, Save, StopCircle } from "lucide-react";
-import { Quiz } from "@shared/schema";
+import { Play, Eye, EyeOff, Plus, Trash2, Edit, Save, StopCircle, Trophy } from "lucide-react";
+import { Quiz, User, WS_EVENTS } from "@shared/schema";
 
 export default function Admin() {
-  useWebSocket();
+  const [leaderboard, setLeaderboard] = useState<User[]>([]);
+  useWebSocket((message) => {
+    if (message.type === WS_EVENTS.SCORE_UPDATE) {
+      setLeaderboard(message.payload as User[]);
+    }
+  });
+
+  useEffect(() => {
+    fetch('/api/leaderboard').then(res => res.json()).then(data => setLeaderboard(data));
+  }, []);
+
   const { data: quizzes, isLoading } = useQuizzes();
   const { data: state } = useGameState();
   
@@ -139,70 +149,99 @@ export default function Admin() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        {sortedQuizzes.map((quiz) => (
-          <div key={quiz.id}>
-            {editingQuiz?.id === quiz.id ? (
-                <QuickEditForm quiz={quiz} onCancel={() => setEditingQuiz(null)} />
-            ) : (
-                <Card className={`transition-all duration-200 ${currentQuiz?.id === quiz.id ? "ring-2 ring-green-500 shadow-xl scale-[1.01]" : "hover:shadow-md"}`}>
-                    <CardContent className="p-6 flex items-center justify-between gap-6">
-                        <div className="flex items-center gap-4 flex-1">
-                            <div className="bg-muted w-10 h-10 rounded-lg flex items-center justify-center font-bold text-muted-foreground">
-                                {quiz.order}
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-lg">{quiz.question}</h3>
-                                <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
-                                    <span className={quiz.correctAnswer === "A" ? "text-green-600 font-bold" : ""}>A: {quiz.optionA}</span>
-                                    <span className={quiz.correctAnswer === "B" ? "text-green-600 font-bold" : ""}>B: {quiz.optionB}</span>
-                                    <span className={quiz.correctAnswer === "C" ? "text-green-600 font-bold" : ""}>C: {quiz.optionC}</span>
-                                    <span className={quiz.correctAnswer === "D" ? "text-green-600 font-bold" : ""}>D: {quiz.optionD}</span>
-                                </div>
-                            </div>
-                        </div>
+      <div className="grid grid-cols-12 gap-8">
+        <div className="col-span-8 space-y-4">
+          {sortedQuizzes.map((quiz) => (
+            <div key={quiz.id}>
+              {editingQuiz?.id === quiz.id ? (
+                  <QuickEditForm quiz={quiz} onCancel={() => setEditingQuiz(null)} />
+              ) : (
+                  <Card className={`transition-all duration-200 ${currentQuiz?.id === quiz.id ? "ring-2 ring-green-500 shadow-xl scale-[1.01]" : "hover:shadow-md"}`}>
+                      <CardContent className="p-6 flex items-center justify-between gap-6">
+                          <div className="flex items-center gap-4 flex-1">
+                              <div className="bg-muted w-10 h-10 rounded-lg flex items-center justify-center font-bold text-muted-foreground">
+                                  {quiz.order}
+                              </div>
+                              <div className="flex-1">
+                                  <h3 className="font-bold text-lg">{quiz.question}</h3>
+                                  <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
+                                      <span className={quiz.correctAnswer === "A" ? "text-green-600 font-bold" : ""}>A: {quiz.optionA}</span>
+                                      <span className={quiz.correctAnswer === "B" ? "text-green-600 font-bold" : ""}>B: {quiz.optionB}</span>
+                                      <span className={quiz.correctAnswer === "C" ? "text-green-600 font-bold" : ""}>C: {quiz.optionC}</span>
+                                      <span className={quiz.correctAnswer === "D" ? "text-green-600 font-bold" : ""}>D: {quiz.optionD}</span>
+                                  </div>
+                              </div>
+                          </div>
 
-                        <div className="flex items-center gap-2">
-                            {currentQuiz?.id === quiz.id ? (
-                                <Button 
-                                    onClick={handleReveal}
-                                    variant={state?.isResultRevealed ? "default" : "secondary"}
-                                    className="min-w-[140px]"
-                                >
-                                    {state?.isResultRevealed ? <><EyeOff className="mr-2 w-4 h-4"/> Hide Answer</> : <><Eye className="mr-2 w-4 h-4"/> Reveal Answer</>}
-                                </Button>
-                            ) : (
-                                <Button onClick={() => handleStartQuiz(quiz.id)} variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
-                                    <Play className="w-4 h-4 mr-2" /> Start
-                                </Button>
-                            )}
-                            
-                            <Button variant="ghost" size="icon" onClick={() => setEditingQuiz(quiz)}>
-                                <Edit className="w-4 h-4" />
-                            </Button>
-                            
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="text-destructive hover:bg-destructive/10"
-                                onClick={() => {
-                                    if(confirm('Are you sure?')) deleteQuiz.mutate(quiz.id);
-                                }}
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-          </div>
-        ))}
-
-        {sortedQuizzes.length === 0 && (
-            <div className="text-center py-20 text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
-                <p>No questions yet. Create one to get started!</p>
+                          <div className="flex items-center gap-2">
+                              {currentQuiz?.id === quiz.id ? (
+                                  <Button 
+                                      onClick={handleReveal}
+                                      variant={state?.isResultRevealed ? "default" : "secondary"}
+                                      className="min-w-[140px]"
+                                  >
+                                      {state?.isResultRevealed ? <><EyeOff className="mr-2 w-4 h-4"/> Hide Answer</> : <><Eye className="mr-2 w-4 h-4"/> Reveal Answer</>}
+                                  </Button>
+                              ) : (
+                                  <Button onClick={() => handleStartQuiz(quiz.id)} variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+                                      <Play className="w-4 h-4 mr-2" /> Start
+                                  </Button>
+                              )}
+                              
+                              <Button variant="ghost" size="icon" onClick={() => setEditingQuiz(quiz)}>
+                                  <Edit className="w-4 h-4" />
+                              </Button>
+                              
+                              <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="text-destructive hover:bg-destructive/10"
+                                  onClick={() => {
+                                      if(confirm('Are you sure?')) deleteQuiz.mutate(quiz.id);
+                                  }}
+                              >
+                                  <Trash2 className="w-4 h-4" />
+                              </Button>
+                          </div>
+                      </CardContent>
+                  </Card>
+              )}
             </div>
-        )}
+          ))}
+
+          {sortedQuizzes.length === 0 && (
+              <div className="text-center py-20 text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
+                  <p>No questions yet. Create one to get started!</p>
+              </div>
+          )}
+        </div>
+
+        <div className="col-span-4 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-500" />
+                Live Leaderboard
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {leaderboard.map((user, i) => (
+                  <div key={user.id} className="flex justify-between items-center p-2 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm opacity-50">#{i + 1}</span>
+                      <span className="font-bold">{user.name}</span>
+                    </div>
+                    <span className="font-mono font-bold">{user.score} pts</span>
+                  </div>
+                ))}
+                {leaderboard.length === 0 && (
+                  <p className="text-center text-muted-foreground py-4">No participants yet</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>
   );

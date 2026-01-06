@@ -116,9 +116,18 @@ export async function registerRoutes(
     res.json(state);
   });
 
+  app.get('/api/leaderboard', async (req, res) => {
+    const leaderboard = await storage.getLeaderboard();
+    res.json(leaderboard);
+  });
+
   app.post(api.state.update.path, async (req, res) => {
     const newState = await storage.updateAppState(req.body);
     broadcast({ type: WS_EVENTS.STATE_UPDATE, payload: newState });
+    if (req.body.isResultRevealed) {
+        const leaderboard = await storage.getLeaderboard();
+        broadcast({ type: WS_EVENTS.SCORE_UPDATE, payload: leaderboard });
+    }
     res.json(newState);
   });
 

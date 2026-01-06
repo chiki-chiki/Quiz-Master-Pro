@@ -4,11 +4,25 @@ import { useWebSocket } from "@/hooks/use-websocket";
 import { Layout } from "@/components/ui/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { User } from "@shared/schema";
-import { Loader2 } from "lucide-react";
+import { User, WS_EVENTS } from "@shared/schema";
+import { Loader2, Trophy } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Projector() {
-  useWebSocket();
+  const { data: initialLeaderboard } = useGameState(); // We'll use a separate state for leaderboard
+  const [leaderboard, setLeaderboard] = useState<User[]>([]);
+
+  useWebSocket((message) => {
+    if (message.type === WS_EVENTS.SCORE_UPDATE) {
+      setLeaderboard(message.payload as User[]);
+    }
+  });
+
+  useEffect(() => {
+    // Fetch initial leaderboard
+    fetch('/api/leaderboard').then(res => res.json()).then(data => setLeaderboard(data));
+  }, []);
+
   const { data: state } = useGameState();
   const { data: quizzes } = useQuizzes();
   const { data: responses } = useAllResponses();
@@ -80,13 +94,14 @@ export default function Projector() {
           {options.map((opt) => {
             const isCorrect = currentQuiz.correctAnswer === opt.label;
             const isDimmed = showResults && !isCorrect;
+            const choiceResponses = responses?.filter(r => r.quizId === currentQuiz.id && r.selection === opt.label) || [];
             
             return (
               <motion.div
                 key={opt.label}
                 layout
                 className={cn(
-                  "relative rounded-3xl p-8 flex flex-col justify-center h-full min-h-[180px] border-4 transition-all duration-500",
+                  "relative rounded-3xl p-8 flex flex-col justify-start h-full min-h-[180px] border-4 transition-all duration-500",
                   opt.label === "A" ? "border-red-500 bg-red-500/10" :
                   opt.label === "B" ? "border-blue-500 bg-blue-500/10" :
                   opt.label === "C" ? "border-green-500 bg-green-500/10" :
@@ -95,21 +110,43 @@ export default function Projector() {
                   showResults && isCorrect && "bg-white text-black scale-105 shadow-[0_0_50px_rgba(34,197,94,0.6)] border-transparent z-10"
                 )}
               >
-                <div className={cn(
-                  "absolute top-6 left-6 w-16 h-16 rounded-full flex items-center justify-center text-4xl font-black",
-                  opt.label === "A" ? "bg-red-500 text-white" :
-                  opt.label === "B" ? "bg-blue-500 text-white" :
-                  opt.label === "C" ? "bg-green-500 text-white" :
-                  "bg-yellow-500 text-black"
-                )}>
-                  {opt.label}
+                <div className="flex items-start gap-4 mb-4">
+                  <div className={cn(
+                    "w-16 h-16 rounded-full flex items-center justify-center text-4xl font-black shrink-0",
+                    opt.label === "A" ? "bg-red-500 text-white" :
+                    opt.label === "B" ? "bg-blue-500 text-white" :
+                    opt.label === "C" ? "bg-green-500 text-white" :
+                    "bg-yellow-500 text-black"
+                  )}>
+                    {opt.label}
+                  </div>
+                  <p className={cn(
+                    "text-4xl font-bold leading-tight",
+                    showResults && isCorrect ? "text-black" : "text-white"
+                  )}>
+                    {opt.text}
+                  </p>
                 </div>
-                <p className={cn(
-                  "text-4xl font-bold ml-24 pl-4 leading-tight",
-                  showResults && isCorrect ? "text-black" : "text-white"
-                )}>
-                  {opt.text}
-                </p>
+
+                {/* Participant Names */}
+                <div className="flex flex-wrap gap-2 mt-auto overflow-hidden">
+                  <AnimatePresence>
+                    {choiceResponses.map((r) => (
+                      <motion.span
+                        key={r.userId}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-lg font-bold shadow-sm border",
+                          showResults && isCorrect ? "bg-green-100 border-green-200 text-green-800" : "bg-white/10 border-white/20 text-white"
+                        )}
+                      >
+                        {r.userName}
+                      </motion.span>
+                    ))}
+                  </AnimatePresence>
+                </div>
 
                 {/* Result Bar */}
                 {showResults && (
@@ -140,30 +177,44 @@ export default function Projector() {
           </div>
           
           <div className="flex-1 overflow-y-auto space-y-2 pr-2 scrollbar-hide">
-            {responses?.filter(r => r.quizId === currentQuiz.id).map((response, i) => (
-              <motion.div
-                key={`${response.userId}-${i}`}
-                initial={{ x: 20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className={cn(
-                  "p-3 rounded-xl flex items-center justify-between border",
-                  showResults 
-                    ? (response.selection === currentQuiz.correctAnswer 
-                        ? "bg-green-500/20 border-green-500/50 text-green-200" 
-                        : "bg-red-500/20 border-red-500/50 text-red-200")
-                    : "bg-white/10 border-white/10 text-white"
-                )}
-              >
-                <span className="font-bold text-lg truncate max-w-[70%]">
-                  {response.userName}
-                </span>
-                {showResults ? (
-                  <span className="font-black font-mono text-xl">{response.selection}</span>
-                ) : (
+            {showResults ? (
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-yellow-500 flex items-center gap-2">
+                  <Trophy className="w-6 h-6" /> Leaderboard
+                </h3>
+                {leaderboard.slice(0, 10).map((user, i) => (
+                  <motion.div
+                    key={user.id}
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    className={cn(
+                      "p-3 rounded-xl flex items-center justify-between border bg-white/10 border-white/10",
+                      i === 0 && "bg-yellow-500/20 border-yellow-500/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-xl opacity-50">#{i + 1}</span>
+                      <span className="font-bold text-lg">{user.name}</span>
+                    </div>
+                    <span className="font-black text-xl">{user.score} pts</span>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              responses?.filter(r => r.quizId === currentQuiz.id).map((response, i) => (
+                <motion.div
+                  key={`${response.userId}-${i}`}
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  className="p-3 rounded-xl flex items-center justify-between border bg-white/10 border-white/10 text-white"
+                >
+                  <span className="font-bold text-lg truncate max-w-[70%]">
+                    {response.userName}
+                  </span>
                   <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
-                )}
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
       </div>

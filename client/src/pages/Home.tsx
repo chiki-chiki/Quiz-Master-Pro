@@ -157,7 +157,7 @@ export default function Home() {
             return (
               <button
                 key={opt.label}
-                disabled={!!myResponse || showResult}
+                disabled={showResult}
                 onClick={() => handleSubmit(opt.label)}
                 className={buttonClass}
               >

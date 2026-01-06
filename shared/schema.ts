@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   isAdmin: boolean("is_admin").default(false), // 管理者フラグ
+  score: integer("score").default(0).notNull(), // 合計スコア
 });
 
 // クイズ問題
@@ -29,6 +30,7 @@ export const responses = pgTable("responses", {
   userId: integer("user_id").notNull(),
   quizId: integer("quiz_id").notNull(),
   selection: text("selection").notNull(), // 'A', 'B', 'C', 'D'
+  isCorrect: boolean("is_correct").default(false).notNull(),
 });
 
 // アプリケーションの状態（現在の問題など）
@@ -39,9 +41,9 @@ export const appState = pgTable("app_state", {
 });
 
 // === SCHEMAS ===
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, isAdmin: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, isAdmin: true, score: true });
 export const insertQuizSchema = createInsertSchema(quizzes).omit({ id: true });
-export const insertResponseSchema = createInsertSchema(responses).omit({ id: true });
+export const insertResponseSchema = createInsertSchema(responses).omit({ id: true, isCorrect: true });
 export const insertAppStateSchema = createInsertSchema(appState).omit({ id: true });
 
 // === EXPLICIT TYPES ===
@@ -65,6 +67,7 @@ export const WS_EVENTS = {
   RESPONSE_UPDATE: 'response_update', // 誰かが回答した
   QUIZ_UPDATE: 'quiz_update', // 問題文や選択肢が編集された
   USER_JOIN: 'user_join', // 新しいユーザーが参加した
+  SCORE_UPDATE: 'score_update', // スコアが更新された
 } as const;
 
 export interface WsMessage<T = unknown> {

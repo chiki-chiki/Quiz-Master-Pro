@@ -6,13 +6,15 @@ import {
   type Response, type InsertResponse,
   type AppState
 } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByName(name: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getLeaderboard(): Promise<User[]>;
+  incrementUserScore(userId: number): Promise<void>;
   
   // Quizzes
   getQuizzes(): Promise<Quiz[]>;
@@ -22,10 +24,11 @@ export interface IStorage {
   deleteQuiz(id: number): Promise<void>;
 
   // Responses
-  getResponses(): Promise<(Response & { userName: string })[]>; // 名前も返す
+  getResponses(): Promise<(Response & { userName: string })[]>;
   getResponsesForQuiz(quizId: number): Promise<Response[]>;
   createResponse(response: InsertResponse): Promise<Response>;
   getUserResponseForQuiz(userId: number, quizId: number): Promise<Response | undefined>;
+  markResponsesCorrect(quizId: number, correctAnswer: string): Promise<number[]>;
 
   // App State
   getAppState(): Promise<AppState>;
@@ -46,6 +49,16 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  async getLeaderboard(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.isAdmin, false)).orderBy(sql`${users.score} DESC`, users.name);
+  }
+
+  async incrementUserScore(userId: number): Promise<void> {
+    await db.update(users)
+      .set({ score: sql`${users.score} + 1` })
+      .where(eq(users.id, userId));
   }
 
   async getQuizzes(): Promise<Quiz[]> {
@@ -75,12 +88,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getResponses(): Promise<(Response & { userName: string })[]> {
-    // ユーザー名もjoinして返す
     const result = await db.select({
       id: responses.id,
       userId: responses.userId,
       quizId: responses.quizId,
       selection: responses.selection,
+      isCorrect: responses.isCorrect,
       userName: users.name,
     })
     .from(responses)
@@ -99,23 +112,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createResponse(insertResponse: InsertResponse): Promise<Response> {
-    // 同じクイズへの回答があれば更新、なければ作成
+    const state = await this.getAppState();
+    if (state.isResultRevealed) {
+        throw new Error("Cannot change response after results are revealed");
+    }
+
+    const quiz = await this.getQuiz(insertResponse.quizId);
+    const isCorrect = quiz ? quiz.correctAnswer === insertResponse.selection : false;
+
     const existing = await this.getUserResponseForQuiz(insertResponse.userId, insertResponse.quizId);
     if (existing) {
         const [updated] = await db.update(responses)
-            .set({ selection: insertResponse.selection })
+            .set({ selection: insertResponse.selection, isCorrect })
             .where(eq(responses.id, existing.id))
             .returning();
         return updated;
     }
-    const [response] = await db.insert(responses).values(insertResponse).returning();
+    const [response] = await db.insert(responses).values({ ...insertResponse, isCorrect }).returning();
     return response;
+  }
+
+  async markResponsesCorrect(quizId: number, correctAnswer: string): Promise<number[]> {
+    const correctResponses = await db.update(responses)
+      .set({ isCorrect: true })
+      .where(and(eq(responses.quizId, quizId), eq(responses.selection, correctAnswer)))
+      .returning();
+    return correctResponses.map(r => r.userId);
   }
 
   async getAppState(): Promise<AppState> {
     const [state] = await db.select().from(appState);
     if (!state) {
-      // 初期化
       const [newState] = await db.insert(appState).values({
         currentQuizId: null,
         isResultRevealed: false
@@ -126,12 +153,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAppState(updates: Partial<AppState>): Promise<AppState> {
-    // 常にID=1を更新と仮定（またはgetAppStateで取れたID）
     const currentState = await this.getAppState();
     const [updated] = await db.update(appState)
       .set(updates)
       .where(eq(appState.id, currentState.id))
       .returning();
+
+    // 正解発表されたタイミングで、その問題の正解者のスコアを加算する
+    if (updates.isResultRevealed === true && currentState.isResultRevealed === false && currentState.currentQuizId) {
+      const quiz = await this.getQuiz(currentState.currentQuizId);
+      if (quiz) {
+        const correctUserIds = await this.markResponsesCorrect(quiz.id, quiz.correctAnswer);
+        for (const userId of correctUserIds) {
+          await this.incrementUserScore(userId);
+        }
+      }
+    }
     return updated;
   }
 }
