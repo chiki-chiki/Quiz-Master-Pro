@@ -204,20 +204,29 @@ export default function Projector() {
                 {/* Participant Names */}
                 <div className="flex flex-wrap gap-2 mt-auto overflow-hidden">
                   <AnimatePresence>
-                    {choiceResponses.map((r) => (
-                      <motion.span
-                        key={r.userId}
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        className={cn(
-                          "px-3 py-1 rounded-full text-lg font-bold shadow-sm border",
-                          showResults && isCorrect ? "bg-green-100 border-green-200 text-green-800" : "bg-white/10 border-white/20 text-white"
-                        )}
-                      >
-                        {r.userName}
-                      </motion.span>
-                    ))}
+                    {choiceResponses.map((r) => {
+                      const nameCount = choiceResponses.length;
+                      const fontSizeClass = 
+                        nameCount > 30 ? "text-xs px-2 py-0.5" :
+                        nameCount > 15 ? "text-sm px-2.5 py-1" :
+                        "text-lg px-3 py-1";
+                      
+                      return (
+                        <motion.span
+                          key={r.userId}
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          className={cn(
+                            "rounded-full font-bold shadow-sm border",
+                            fontSizeClass,
+                            showResults && isCorrect ? "bg-green-100 border-green-200 text-green-800" : "bg-white/10 border-white/20 text-white"
+                          )}
+                        >
+                          {r.userName}
+                        </motion.span>
+                      );
+                    })}
                   </AnimatePresence>
                 </div>
 
