@@ -259,7 +259,7 @@ export default function Admin() {
                                   onClick={handleStartTimer} 
                                   variant="outline" 
                                   className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                                  disabled={!!state?.timerStartedAt || state?.isResultRevealed}
+                                  disabled={!!state?.timerStartedAt || (state?.isResultRevealed ?? false)}
                                 >
                                   <Clock className="w-4 h-4 mr-2" /> Timer
                                 </Button>
