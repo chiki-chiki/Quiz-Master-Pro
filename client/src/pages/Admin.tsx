@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Play, Eye, EyeOff, Plus, Trash2, Edit, Save, StopCircle, Trophy, Clock } from "lucide-react";
+import { Play, Eye, EyeOff, Plus, Trash2, Edit, Save, StopCircle, Trophy, Clock, Upload } from "lucide-react";
 import { Quiz, User, WS_EVENTS } from "@shared/schema";
 
 export default function Admin() {
@@ -70,7 +70,32 @@ export default function Admin() {
 
   const QuickEditForm = ({ quiz, onCancel }: { quiz: Quiz, onCancel: () => void }) => {
     const [formData, setFormData] = useState(quiz);
-    
+    const [uploading, setUploading] = useState(false);
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setUploading(true);
+      const formDataUpload = new FormData();
+      formDataUpload.append("image", file);
+
+      try {
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formDataUpload,
+        });
+        const data = await res.json();
+        if (data.imageUrl) {
+          setFormData({ ...formData, imageUrl: data.imageUrl });
+        }
+      } catch (error) {
+        console.error("Upload failed:", error);
+      } finally {
+        setUploading(false);
+      }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       updateQuiz.mutate(formData, {
@@ -92,12 +117,32 @@ export default function Admin() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Image URL (Optional)</Label>
-              <Input 
-                value={formData.imageUrl || ""} 
-                onChange={e => setFormData({...formData, imageUrl: e.target.value})}
-                placeholder="https://example.com/image.png"
-              />
+              <Label>Image (URL or Upload)</Label>
+              <div className="flex gap-2">
+                <Input 
+                  value={formData.imageUrl || ""} 
+                  onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+                  placeholder="/uploads/image.png"
+                  className="flex-1"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="icon" 
+                  className="shrink-0"
+                  disabled={uploading}
+                  onClick={() => document.getElementById(`upload-edit-${quiz.id}`)?.click()}
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
+                <input 
+                  id={`upload-edit-${quiz.id}`}
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleFileUpload}
+                />
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -294,6 +339,7 @@ export default function Admin() {
 
 function CreateQuizForm({ onSuccess, order }: { onSuccess: () => void, order: number }) {
   const { mutate, isPending } = useCreateQuiz();
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     question: "",
     imageUrl: "",
@@ -305,6 +351,30 @@ function CreateQuizForm({ onSuccess, order }: { onSuccess: () => void, order: nu
     order: order,
     timeLimit: 20
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formDataUpload = new FormData();
+    formDataUpload.append("image", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formDataUpload,
+      });
+      const data = await res.json();
+      if (data.imageUrl) {
+        setFormData({ ...formData, imageUrl: data.imageUrl });
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -329,12 +399,32 @@ function CreateQuizForm({ onSuccess, order }: { onSuccess: () => void, order: nu
           />
         </div>
         <div className="space-y-2">
-          <Label>Image URL (Optional)</Label>
-          <Input 
+          <Label>Image (URL or Upload)</Label>
+          <div className="flex gap-2">
+            <Input 
               value={formData.imageUrl}
               onChange={e => setFormData({...formData, imageUrl: e.target.value})}
-              placeholder="https://example.com/image.png"
-          />
+              placeholder="/uploads/image.png"
+              className="flex-1"
+            />
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="icon" 
+              className="shrink-0"
+              disabled={uploading}
+              onClick={() => document.getElementById('upload-create')?.click()}
+            >
+              <Upload className="w-4 h-4" />
+            </Button>
+            <input 
+              id="upload-create"
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handleFileUpload}
+            />
+          </div>
         </div>
       </div>
       
