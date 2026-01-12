@@ -154,6 +154,12 @@ export class DatabaseStorage implements IStorage {
 
   async updateAppState(updates: Partial<AppState>): Promise<AppState> {
     const currentState = await this.getAppState();
+    
+    // タイマーが開始された場合、またはクイズが切り替わった場合にタイマーをリセット
+    if (updates.currentQuizId !== undefined && updates.currentQuizId !== currentState.currentQuizId) {
+      updates.timerStartedAt = null;
+    }
+
     const [updated] = await db.update(appState)
       .set(updates)
       .where(eq(appState.id, currentState.id))

@@ -52,7 +52,18 @@ export default function Admin() {
     if (state?.currentQuizId) {
       updateState.mutate({ 
         currentQuizId: state.currentQuizId, 
-        isResultRevealed: !state.isResultRevealed 
+        isResultRevealed: !state.isResultRevealed,
+        timerStartedAt: null // 回答発表時にタイマーをクリア
+      });
+    }
+  };
+
+  const handleStartTimer = () => {
+    if (state?.currentQuizId) {
+      updateState.mutate({
+        currentQuizId: state.currentQuizId,
+        isResultRevealed: false,
+        timerStartedAt: new Date().toISOString()
       });
     }
   };
@@ -70,12 +81,25 @@ export default function Admin() {
     return (
       <Card className="border-2 border-primary mt-4">
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <Input 
-            value={formData.question} 
-            onChange={e => setFormData({...formData, question: e.target.value})}
-            placeholder="Question"
-            className="font-bold"
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Question</Label>
+              <Input 
+                value={formData.question} 
+                onChange={e => setFormData({...formData, question: e.target.value})}
+                placeholder="Question"
+                className="font-bold"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Image URL (Optional)</Label>
+              <Input 
+                value={formData.imageUrl || ""} 
+                onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+                placeholder="https://example.com/image.png"
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <Input value={formData.optionA} onChange={e => setFormData({...formData, optionA: e.target.value})} placeholder="Option A" />
             <Input value={formData.optionB} onChange={e => setFormData({...formData, optionB: e.target.value})} placeholder="Option B" />
@@ -83,20 +107,31 @@ export default function Admin() {
             <Input value={formData.optionD} onChange={e => setFormData({...formData, optionD: e.target.value})} placeholder="Option D" />
           </div>
           <div className="flex justify-between items-center">
-            <Select 
-              value={formData.correctAnswer} 
-              onValueChange={v => setFormData({...formData, correctAnswer: v})}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Answer" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="A">Option A</SelectItem>
-                <SelectItem value="B">Option B</SelectItem>
-                <SelectItem value="C">Option C</SelectItem>
-                <SelectItem value="D">Option D</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-4 items-center">
+              <Select 
+                value={formData.correctAnswer} 
+                onValueChange={v => setFormData({...formData, correctAnswer: v})}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Answer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="A">Option A</SelectItem>
+                  <SelectItem value="B">Option B</SelectItem>
+                  <SelectItem value="C">Option C</SelectItem>
+                  <SelectItem value="D">Option D</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-2">
+                <Label>Time (s)</Label>
+                <Input 
+                  type="number" 
+                  className="w-20" 
+                  value={formData.timeLimit} 
+                  onChange={e => setFormData({...formData, timeLimit: parseInt(e.target.value) || 20})} 
+                />
+              </div>
+            </div>
             <div className="space-x-2">
               <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
               <Button type="submit"><Save className="w-4 h-4 mr-2" /> Save</Button>
@@ -174,6 +209,16 @@ export default function Admin() {
                           </div>
 
                           <div className="flex items-center gap-2">
+                              {currentQuiz?.id === quiz.id && (
+                                <Button 
+                                  onClick={handleStartTimer} 
+                                  variant="outline" 
+                                  className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                                  disabled={!!state?.timerStartedAt || state?.isResultRevealed}
+                                >
+                                  <Clock className="w-4 h-4 mr-2" /> Timer
+                                </Button>
+                              )}
                               {currentQuiz?.id === quiz.id ? (
                                   <Button 
                                       onClick={handleReveal}
@@ -251,19 +296,21 @@ function CreateQuizForm({ onSuccess, order }: { onSuccess: () => void, order: nu
   const { mutate, isPending } = useCreateQuiz();
   const [formData, setFormData] = useState({
     question: "",
+    imageUrl: "",
     optionA: "",
     optionB: "",
     optionC: "",
     optionD: "",
     correctAnswer: "A",
-    order: order
+    order: order,
+    timeLimit: 20
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     mutate(formData, {
       onSuccess: () => {
-        setFormData({ question: "", optionA: "", optionB: "", optionC: "", optionD: "", correctAnswer: "A", order: order + 1 });
+        setFormData({ question: "", imageUrl: "", optionA: "", optionB: "", optionC: "", optionD: "", correctAnswer: "A", order: order + 1, timeLimit: 20 });
         onSuccess();
       }
     });
@@ -271,14 +318,24 @@ function CreateQuizForm({ onSuccess, order }: { onSuccess: () => void, order: nu
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-      <div className="space-y-2">
-        <Label>Question Text</Label>
-        <Input 
-            required
-            value={formData.question}
-            onChange={e => setFormData({...formData, question: e.target.value})}
-            placeholder="e.g. What is the capital of France?"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Question Text</Label>
+          <Input 
+              required
+              value={formData.question}
+              onChange={e => setFormData({...formData, question: e.target.value})}
+              placeholder="e.g. What is the capital of France?"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Image URL (Optional)</Label>
+          <Input 
+              value={formData.imageUrl}
+              onChange={e => setFormData({...formData, imageUrl: e.target.value})}
+              placeholder="https://example.com/image.png"
+          />
+        </div>
       </div>
       
       <div className="grid grid-cols-2 gap-4">
@@ -316,6 +373,15 @@ function CreateQuizForm({ onSuccess, order }: { onSuccess: () => void, order: nu
             <SelectItem value="D">Option D</SelectItem>
             </SelectContent>
         </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Time Limit (seconds)</Label>
+        <Input 
+          type="number" 
+          value={formData.timeLimit} 
+          onChange={e => setFormData({...formData, timeLimit: parseInt(e.target.value) || 20})} 
+        />
       </div>
 
       <div className="pt-4 flex justify-end gap-2">

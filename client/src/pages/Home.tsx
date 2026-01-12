@@ -26,6 +26,28 @@ export default function Home() {
     (r) => r.userId === user?.id && r.quizId === currentQuiz?.id
   );
 
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (state?.timerStartedAt && currentQuiz) {
+      const startTime = new Date(state.timerStartedAt).getTime();
+      const limit = currentQuiz.timeLimit * 1000;
+      
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const diff = Math.max(0, Math.ceil((startTime + limit - now) / 1000));
+        setTimeLeft(diff);
+        if (diff <= 0) clearInterval(interval);
+      }, 500);
+
+      return () => clearInterval(interval);
+    } else {
+      setTimeLeft(null);
+    }
+  }, [state?.timerStartedAt, currentQuiz]);
+
+  const isTimeUp = timeLeft !== null && timeLeft <= 0;
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
@@ -34,7 +56,7 @@ export default function Home() {
   };
 
   const handleSubmit = (option: string) => {
-    if (currentQuiz && !state?.isResultRevealed) {
+    if (currentQuiz && !state?.isResultRevealed && !isTimeUp) {
       submitMutation.mutate({ quizId: currentQuiz.id, selection: option });
     }
   };
@@ -134,8 +156,24 @@ export default function Home() {
         animate={{ y: 0, opacity: 1 }}
         className="space-y-6"
       >
-        <Card className="p-6 border-l-4 border-l-primary shadow-lg mb-8">
+        <Card className="p-6 border-l-4 border-l-primary shadow-lg mb-8 relative">
           <h2 className="text-2xl font-bold font-display leading-tight">{currentQuiz.question}</h2>
+          {currentQuiz.imageUrl && (
+            <img 
+              src={currentQuiz.imageUrl} 
+              alt="Question" 
+              className="mt-4 w-full h-48 object-contain rounded-lg bg-neutral-100"
+            />
+          )}
+          
+          {timeLeft !== null && (
+            <div className={cn(
+              "absolute -top-3 -right-3 w-12 h-12 rounded-full flex items-center justify-center font-black text-white shadow-lg",
+              timeLeft > 5 ? "bg-primary" : "bg-red-500 animate-pulse"
+            )}>
+              {timeLeft}
+            </div>
+          )}
         </Card>
 
         <div className="grid grid-cols-1 gap-4">
@@ -157,7 +195,7 @@ export default function Home() {
             return (
               <button
                 key={opt.label}
-                disabled={showResult}
+                disabled={showResult || isTimeUp}
                 onClick={() => handleSubmit(opt.label)}
                 className={buttonClass}
               >
@@ -186,19 +224,19 @@ export default function Home() {
         </div>
 
         <AnimatePresence>
-          {myResponse && !state?.isResultRevealed && (
+          {isTimeUp && !state?.isResultRevealed && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
-              className="mt-8 text-center bg-primary/10 rounded-xl p-4"
+              className="mt-8 text-center bg-red-100 rounded-xl p-4"
             >
-              <p className="flex items-center justify-center gap-2 font-bold text-primary text-lg">
-                <Clock className="w-5 h-5 animate-pulse" />
-                Answer Submitted! Waiting for results...
+              <p className="font-bold text-red-600 text-lg">
+                Time's Up!
               </p>
             </motion.div>
           )}
-        </AnimatePresence>
+          {myResponse && !state?.isResultRevealed && !isTimeUp && (
+            <motion.div
       </motion.div>
     </Layout>
   );

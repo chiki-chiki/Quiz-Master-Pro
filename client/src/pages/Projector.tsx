@@ -30,6 +30,26 @@ export default function Projector() {
   const currentQuiz = quizzes?.find((q) => q.id === state?.currentQuizId);
   const showResults = state?.isResultRevealed;
 
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (state?.timerStartedAt && currentQuiz) {
+      const startTime = new Date(state.timerStartedAt).getTime();
+      const limit = currentQuiz.timeLimit * 1000;
+      
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const diff = Math.max(0, Math.ceil((startTime + limit - now) / 1000));
+        setTimeLeft(diff);
+        if (diff <= 0) clearInterval(interval);
+      }, 100);
+
+      return () => clearInterval(interval);
+    } else {
+      setTimeLeft(null);
+    }
+  }, [state?.timerStartedAt, currentQuiz]);
+
   // Derive connected users from responses? 
   // Ideally backend provides a list of online users, but for now we visualize based on responses + unique IDs
   // In a real app, we'd have a specific "online users" endpoint or store.
@@ -77,13 +97,35 @@ export default function Projector() {
         key={currentQuiz.question}
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="mb-8"
+        className="mb-8 relative"
       >
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/10 shadow-2xl">
+        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/10 shadow-2xl flex flex-col items-center gap-6">
           <h1 className="text-5xl md:text-6xl font-bold leading-tight text-center drop-shadow-xl">
             {currentQuiz.question}
           </h1>
+          {currentQuiz.imageUrl && (
+            <motion.img 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              src={currentQuiz.imageUrl} 
+              alt="Question" 
+              className="max-h-[300px] rounded-2xl shadow-2xl border-4 border-white/20 object-contain"
+            />
+          )}
         </div>
+        
+        {timeLeft !== null && (
+          <motion.div 
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className={cn(
+              "absolute -top-4 -right-4 w-24 h-24 rounded-full flex items-center justify-center text-4xl font-black border-8 shadow-2xl z-20",
+              timeLeft > 5 ? "bg-primary border-primary/20 text-white" : "bg-red-500 border-red-200 text-white animate-bounce"
+            )}
+          >
+            {timeLeft}
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Main Content Area - Split between Options and Live Stats */}

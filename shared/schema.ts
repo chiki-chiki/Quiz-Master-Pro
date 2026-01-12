@@ -16,12 +16,14 @@ export const users = pgTable("users", {
 export const quizzes = pgTable("quizzes", {
   id: serial("id").primaryKey(),
   question: text("question").notNull(),
+  imageUrl: text("image_url"), // 追加: 問題画像
   optionA: text("option_a").notNull(),
   optionB: text("option_b").notNull(),
   optionC: text("option_c").notNull(),
   optionD: text("option_d").notNull(),
   correctAnswer: text("correct_answer").notNull(), // 'A', 'B', 'C', 'D'
   order: integer("order").notNull(), // 表示順
+  timeLimit: integer("time_limit").default(20).notNull(), // 追加: 制限時間（秒）
 });
 
 // 回答
@@ -38,6 +40,7 @@ export const appState = pgTable("app_state", {
   id: serial("id").primaryKey(), // 常に1つのレコードのみ使用
   currentQuizId: integer("current_quiz_id"), // nullなら待機中
   isResultRevealed: boolean("is_result_revealed").default(false),
+  timerStartedAt: text("timer_started_at"), // 追加: タイマー開始時刻 (ISO string)
 });
 
 // === SCHEMAS ===
@@ -59,7 +62,11 @@ export type InsertResponse = z.infer<typeof insertResponseSchema>;
 // API Requests
 export type LoginRequest = { name: string };
 export type SubmitResponseRequest = { quizId: number; selection: string };
-export type AdminUpdateStateRequest = { currentQuizId: number | null; isResultRevealed: boolean };
+export type AdminUpdateStateRequest = { 
+  currentQuizId: number | null; 
+  isResultRevealed: boolean;
+  timerStartedAt?: string | null;
+};
 
 // WebSocket Messages
 export const WS_EVENTS = {
