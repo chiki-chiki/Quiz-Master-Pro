@@ -125,6 +125,15 @@ export async function registerRoutes(
       });
   });
 
+  // Reset endpoint
+  app.post("/api/reset", async (req, res) => {
+    await storage.resetAllData();
+    broadcast({ type: WS_EVENTS.QUIZ_UPDATE, payload: null });
+    broadcast({ type: WS_EVENTS.STATE_UPDATE, payload: await storage.getAppState() });
+    broadcast({ type: WS_EVENTS.SCORE_UPDATE, payload: [] });
+    res.json({ success: true });
+  });
+
   // --- Quizzes ---
   app.get(api.quizzes.list.path, async (req, res) => {
     const quizzes = await storage.getQuizzes();

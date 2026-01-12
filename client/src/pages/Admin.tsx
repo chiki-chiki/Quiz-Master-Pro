@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Play, Eye, EyeOff, Plus, Trash2, Edit, Save, StopCircle, Trophy, Clock, Upload } from "lucide-react";
+import { Play, Eye, EyeOff, Plus, Trash2, Edit, Save, StopCircle, Trophy, Clock, Upload, RefreshCcw } from "lucide-react";
 import { Quiz, User, WS_EVENTS } from "@shared/schema";
 
 export default function Admin() {
@@ -46,6 +46,17 @@ export default function Admin() {
 
   const handleStopQuiz = () => {
     updateState.mutate({ currentQuizId: null, isResultRevealed: false });
+  };
+
+  const handleReset = async () => {
+    if (confirm("全ての参加者と回答データをリセットしますか？（クイズ設定は残ります）")) {
+      try {
+        await fetch("/api/reset", { method: "POST" });
+        window.location.reload();
+      } catch (error) {
+        console.error("Reset failed:", error);
+      }
+    }
   };
 
   const handleReveal = () => {
@@ -212,6 +223,10 @@ export default function Admin() {
                     </Button>
                 )}
             </Card>
+
+            <Button variant="outline" size="lg" className="rounded-xl border-destructive text-destructive hover:bg-destructive/10" onClick={handleReset}>
+                <RefreshCcw className="w-5 h-5 mr-2" /> Reset Data
+            </Button>
 
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>

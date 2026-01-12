@@ -36,6 +36,16 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  async resetAllData(): Promise<void> {
+    await db.delete(responses);
+    await db.delete(users).where(eq(users.isAdmin, false));
+    await db.update(appState).set({
+      currentQuizId: null,
+      isResultRevealed: false,
+      timerStartedAt: null
+    }).where(eq(appState.id, 1));
+  }
+
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
