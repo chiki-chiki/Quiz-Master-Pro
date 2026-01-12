@@ -148,10 +148,7 @@ export async function registerRoutes(
 
   app.put(api.quizzes.update.path, async (req, res) => {
     const quiz = await storage.updateQuiz(Number(req.params.id), req.body);
-    broadcast({ type: WS_EVENTS.QUIZ_UPDATE, payload: quiz }); // Notify clients to re-fetch or update
-    
-    // If this is the current quiz, we might need to send a state update too, 
-    // but client can handle refetching on QUIZ_UPDATE.
+    broadcast({ type: WS_EVENTS.QUIZ_UPDATE, payload: quiz }); 
     res.json(quiz);
   });
   
@@ -194,7 +191,6 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Not authenticated" });
     }
     
-    // Force userId from session
     const response = await storage.createResponse({
         ...req.body,
         userId: userId

@@ -8,7 +8,31 @@ import { User, WS_EVENTS } from "@shared/schema";
 import { Loader2, Trophy } from "lucide-react";
 import { useState, useEffect } from "react";
 
+import { Maximize, Minimize } from "lucide-react";
+
 export default function Projector() {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   const { data: initialLeaderboard } = useGameState(); // We'll use a separate state for leaderboard
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
 
@@ -91,7 +115,14 @@ export default function Projector() {
   ];
 
   return (
-    <Layout className="h-screen flex flex-col p-8 bg-neutral-900 text-white overflow-hidden">
+    <Layout className="h-screen flex flex-col p-8 bg-neutral-900 text-white overflow-hidden relative">
+      <button 
+        onClick={toggleFullscreen}
+        className="absolute top-4 right-4 z-50 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors backdrop-blur-sm border border-white/10"
+        title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+      >
+        {isFullscreen ? <Minimize className="w-6 h-6" /> : <Maximize className="w-6 h-6" />}
+      </button>
       {/* Header Question */}
       <motion.div 
         key={currentQuiz.question}
