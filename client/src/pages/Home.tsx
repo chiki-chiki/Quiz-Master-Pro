@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser, useLogin } from "@/hooks/use-auth";
 import { useGameState, useSubmitResponse, useAllResponses } from "@/hooks/use-game-state";
 import { useQuizzes } from "@/hooks/use-quizzes";
@@ -237,6 +237,17 @@ export default function Home() {
           )}
           {myResponse && !state?.isResultRevealed && !isTimeUp && (
             <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              className="mt-8 text-center bg-primary/10 rounded-xl p-4"
+            >
+              <p className="flex items-center justify-center gap-2 font-bold text-primary text-lg">
+                <Clock className="w-5 h-5 animate-pulse" />
+                Answer Submitted! Waiting for results...
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </Layout>
   );
