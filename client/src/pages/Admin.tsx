@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Play, Eye, EyeOff, Plus, Trash2, Edit, Save, StopCircle, Trophy } from "lucide-react";
+import { Play, Eye, EyeOff, Plus, Trash2, Edit, Save, StopCircle, Trophy, Clock } from "lucide-react";
 import { Quiz, User, WS_EVENTS } from "@shared/schema";
 
 export default function Admin() {
