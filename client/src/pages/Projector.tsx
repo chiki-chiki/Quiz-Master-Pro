@@ -140,7 +140,7 @@ export default function Projector() {
               animate={{ scale: 1, opacity: 1 }}
               src={currentQuiz.imageUrl} 
               alt="Question" 
-              className="max-h-[30vh] w-auto rounded-xl shadow-lg border-2 border-white/20 object-contain"
+              className="max-h-[50vh] w-auto rounded-xl shadow-lg border-2 border-white/20 object-contain"
             />
           )}
         </div>
