@@ -130,8 +130,8 @@ export default function Projector() {
         animate={{ y: 0, opacity: 1 }}
         className="mb-8 relative"
       >
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/10 shadow-2xl flex flex-col items-center gap-4">
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight text-center drop-shadow-xl">
+        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-4 border border-white/10 shadow-2xl flex flex-col items-center gap-2">
+          <h1 className="text-3xl md:text-4xl font-bold leading-tight text-center drop-shadow-xl">
             {currentQuiz.question}
           </h1>
           {currentQuiz.imageUrl && (
@@ -140,7 +140,7 @@ export default function Projector() {
               animate={{ scale: 1, opacity: 1 }}
               src={currentQuiz.imageUrl} 
               alt="Question" 
-              className="max-h-[200px] rounded-2xl shadow-2xl border-4 border-white/20 object-contain"
+              className="max-h-[150px] rounded-xl shadow-2xl border-2 border-white/20 object-contain"
             />
           )}
         </div>
@@ -202,12 +202,13 @@ export default function Projector() {
                 </div>
 
                 {/* Participant Names */}
-                <div className="flex flex-wrap gap-1 mt-auto overflow-hidden content-start">
+                <div className="flex flex-wrap gap-0.5 mt-auto overflow-hidden content-start max-h-[140px]">
                   <AnimatePresence>
                     {choiceResponses.map((r) => {
                       const nameCount = choiceResponses.length;
                       let fontSizeClass = "text-lg px-3 py-1";
-                      if (nameCount > 100) fontSizeClass = "text-[8px] px-1 py-0";
+                      if (nameCount > 150) fontSizeClass = "text-[6px] px-0.5 py-0";
+                      else if (nameCount > 100) fontSizeClass = "text-[8px] px-1 py-0";
                       else if (nameCount > 60) fontSizeClass = "text-[10px] px-1.5 py-0.5";
                       else if (nameCount > 40) fontSizeClass = "text-xs px-2 py-0.5";
                       else if (nameCount > 20) fontSizeClass = "text-sm px-2.5 py-1";
@@ -219,7 +220,7 @@ export default function Projector() {
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0, opacity: 0 }}
                           className={cn(
-                            "rounded-full font-bold shadow-sm border truncate max-w-[120px]",
+                            "rounded-full font-bold shadow-sm border truncate max-w-[80px]",
                             fontSizeClass,
                             showResults && isCorrect ? "bg-green-100 border-green-200 text-green-800" : "bg-white/10 border-white/20 text-white"
                           )}
