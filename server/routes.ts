@@ -173,10 +173,10 @@ export async function registerRoutes(
     const newState = await storage.updateAppState(req.body);
     broadcast({ type: WS_EVENTS.STATE_UPDATE, payload: newState });
     if (req.body.isResultRevealed) {
-        const leaderboard = await storage.getLeaderboard();
-        broadcast({ type: WS_EVENTS.SCORE_UPDATE, payload: leaderboard });
+      const leaderboard = await storage.getLeaderboard();
+      broadcast({ type: WS_EVENTS.SCORE_UPDATE, payload: leaderboard });
     }
-    res.json(newState);
+    return res.json(newState);
   });
 
   // --- Responses ---
