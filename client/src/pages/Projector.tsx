@@ -128,7 +128,7 @@ export default function Projector() {
         key={currentQuiz.question}
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="mb-8 relative"
+        className="mb-4 relative"
       >
         <div className="bg-white/10 backdrop-blur-md rounded-3xl p-4 border border-white/10 shadow-2xl flex flex-col items-center gap-2">
           <h1 className="text-3xl md:text-4xl font-bold leading-tight text-center drop-shadow-xl">
@@ -140,7 +140,7 @@ export default function Projector() {
               animate={{ scale: 1, opacity: 1 }}
               src={currentQuiz.imageUrl} 
               alt="Question" 
-              className="max-h-[150px] rounded-xl shadow-2xl border-2 border-white/20 object-contain"
+              className="max-h-[400px] w-auto rounded-2xl shadow-2xl border-4 border-white/20 object-contain"
             />
           )}
         </div>
@@ -150,7 +150,7 @@ export default function Projector() {
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className={cn(
-              "absolute -top-4 -right-4 w-24 h-24 rounded-full flex items-center justify-center text-4xl font-black border-8 shadow-2xl z-20",
+              "absolute -top-2 -right-2 w-16 h-16 rounded-full flex items-center justify-center text-3xl font-black border-4 shadow-2xl z-20",
               timeLeft > 5 ? "bg-primary border-primary/20 text-white" : "bg-red-500 border-red-200 text-white animate-bounce"
             )}
           >
@@ -160,10 +160,10 @@ export default function Projector() {
       </motion.div>
 
       {/* Main Content Area - Split between Options and Live Stats */}
-      <div className="flex-1 grid grid-cols-12 gap-8 h-full">
+      <div className="flex-1 grid grid-cols-12 gap-4 h-full overflow-hidden">
         
         {/* Options Grid */}
-        <div className="col-span-8 grid grid-cols-2 gap-6 h-full content-start">
+        <div className="col-span-8 grid grid-cols-2 gap-4 h-full content-start overflow-hidden">
           {options.map((opt) => {
             const isCorrect = currentQuiz.correctAnswer === opt.label;
             const isDimmed = showResults && !isCorrect;
@@ -174,18 +174,18 @@ export default function Projector() {
                 key={opt.label}
                 layout
                 className={cn(
-                  "relative rounded-3xl p-8 flex flex-col justify-start h-full min-h-[180px] border-4 transition-all duration-500",
+                  "relative rounded-2xl p-4 flex flex-col justify-start min-h-[120px] border-2 transition-all duration-500 overflow-hidden",
                   opt.label === "A" ? "border-red-500 bg-red-500/10" :
                   opt.label === "B" ? "border-blue-500 bg-blue-500/10" :
                   opt.label === "C" ? "border-green-500 bg-green-500/10" :
                   "border-yellow-500 bg-yellow-500/10",
                   isDimmed && "opacity-20 grayscale scale-95",
-                  showResults && isCorrect && "bg-white text-black scale-105 shadow-[0_0_50px_rgba(34,197,94,0.6)] border-transparent z-10"
+                  showResults && isCorrect && "bg-white text-black scale-105 shadow-[0_0_30px_rgba(34,197,94,0.6)] border-transparent z-10"
                 )}
               >
-                <div className="flex items-start gap-4 mb-4">
+                <div className="flex items-center gap-3 mb-2 shrink-0">
                   <div className={cn(
-                    "w-16 h-16 rounded-full flex items-center justify-center text-4xl font-black shrink-0",
+                    "w-10 h-10 rounded-full flex items-center justify-center text-2xl font-black shrink-0",
                     opt.label === "A" ? "bg-red-500 text-white" :
                     opt.label === "B" ? "bg-blue-500 text-white" :
                     opt.label === "C" ? "bg-green-500 text-white" :
@@ -194,7 +194,7 @@ export default function Projector() {
                     {opt.label}
                   </div>
                   <p className={cn(
-                    "text-4xl font-bold leading-tight",
+                    "text-2xl font-bold leading-tight truncate",
                     showResults && isCorrect ? "text-black" : "text-white"
                   )}>
                     {opt.text}
@@ -202,16 +202,15 @@ export default function Projector() {
                 </div>
 
                 {/* Participant Names */}
-                <div className="flex flex-wrap gap-0.5 mt-auto overflow-hidden content-start max-h-[140px]">
+                <div className="flex flex-wrap gap-1 mt-1 overflow-hidden content-start">
                   <AnimatePresence>
                     {choiceResponses.map((r) => {
                       const nameCount = choiceResponses.length;
-                      let fontSizeClass = "text-lg px-3 py-1";
-                      if (nameCount > 150) fontSizeClass = "text-[6px] px-0.5 py-0";
-                      else if (nameCount > 100) fontSizeClass = "text-[8px] px-1 py-0";
-                      else if (nameCount > 60) fontSizeClass = "text-[10px] px-1.5 py-0.5";
-                      else if (nameCount > 40) fontSizeClass = "text-xs px-2 py-0.5";
-                      else if (nameCount > 20) fontSizeClass = "text-sm px-2.5 py-1";
+                      let fontSizeClass = "text-base px-2 py-0.5";
+                      if (nameCount > 100) fontSizeClass = "text-[8px] px-1 py-0";
+                      else if (nameCount > 60) fontSizeClass = "text-[10px] px-1 py-0";
+                      else if (nameCount > 40) fontSizeClass = "text-xs px-1.5 py-0.5";
+                      else if (nameCount > 20) fontSizeClass = "text-sm px-2 py-0.5";
                       
                       return (
                         <motion.span
@@ -220,7 +219,7 @@ export default function Projector() {
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0, opacity: 0 }}
                           className={cn(
-                            "rounded-full font-bold shadow-sm border truncate max-w-[80px]",
+                            "rounded-full font-bold shadow-sm border whitespace-nowrap",
                             fontSizeClass,
                             showResults && isCorrect ? "bg-green-100 border-green-200 text-green-800" : "bg-white/10 border-white/20 text-white"
                           )}
