@@ -171,12 +171,13 @@ export async function registerRoutes(
 
   app.post(api.state.update.path, async (req, res) => {
     const newState = await storage.updateAppState(req.body);
+    // Broadcast immediately without waiting
     broadcast({ type: WS_EVENTS.STATE_UPDATE, payload: newState });
     if (req.body.isResultRevealed) {
       const leaderboard = await storage.getLeaderboard();
       broadcast({ type: WS_EVENTS.SCORE_UPDATE, payload: leaderboard });
     }
-    return res.json(newState);
+    res.json(newState);
   });
 
   // --- Responses ---
