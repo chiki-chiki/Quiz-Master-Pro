@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { User, WS_EVENTS } from "@shared/schema";
 import { Loader2, Trophy } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import confetti from "canvas-confetti";
 
 import { Maximize, Minimize } from "lucide-react";
 
@@ -50,6 +51,19 @@ export default function Projector() {
   const { data: state } = useGameState();
   const { data: quizzes } = useQuizzes();
   const { data: responses } = useAllResponses();
+  const prevShowResults = useRef(false);
+
+  useEffect(() => {
+    if (state?.isResultRevealed && !prevShowResults.current) {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
+      });
+    }
+    prevShowResults.current = !!state?.isResultRevealed;
+  }, [state?.isResultRevealed]);
   
   const currentQuiz = quizzes?.find((q) => q.id === state?.currentQuizId);
   const showResults = state?.isResultRevealed;
