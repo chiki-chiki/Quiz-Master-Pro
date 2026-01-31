@@ -55,7 +55,6 @@ export default function Projector() {
 
   useEffect(() => {
     if (state?.isResultRevealed && !prevShowResults.current && currentQuiz) {
-      // Find the element for the correct answer to get its position
       const correctOption = currentQuiz.correctAnswer;
       const selector = `[data-option="${correctOption}"]`;
       const element = document.querySelector(selector);
@@ -69,54 +68,29 @@ export default function Projector() {
         };
       }
 
-      // 1. Center burst (more particles)
+      // Reduced particle counts for performance
       confetti({
-        particleCount: 200,
-        spread: 100,
+        particleCount: 100,
+        spread: 70,
         origin: origin,
         colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
         scalar: 1.2
       });
 
-      // 2. Side bursts for extra flair
       setTimeout(() => {
         confetti({
-          particleCount: 100,
+          particleCount: 50,
           angle: 60,
           spread: 55,
           origin: { x: 0, y: 0.6 }
         });
         confetti({
-          particleCount: 100,
+          particleCount: 50,
           angle: 120,
           spread: 55,
           origin: { x: 1, y: 0.6 }
         });
       }, 200);
-
-      // 3. Continuous shower for a few seconds
-      const end = Date.now() + 2000;
-      const frame = () => {
-        confetti({
-          particleCount: 2,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 },
-          colors: ['#ff0000', '#ffff00']
-        });
-        confetti({
-          particleCount: 2,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 },
-          colors: ['#0000ff', '#00ff00']
-        });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
-      };
-      frame();
     }
     prevShowResults.current = !!state?.isResultRevealed;
   }, [state?.isResultRevealed, currentQuiz]);
@@ -273,8 +247,8 @@ export default function Projector() {
                 </div>
 
                 {/* Participant Names */}
-                <div className="flex flex-wrap gap-1 mt-1 overflow-y-auto content-start scrollbar-hide flex-1">
-                  <AnimatePresence>
+                <div className="flex flex-wrap gap-1 mt-1 overflow-hidden content-start flex-1">
+                  <AnimatePresence initial={false}>
                     {choiceResponses.map((r) => {
                       const nameCount = choiceResponses.length;
                       let fontSizeClass = "text-sm px-1.5 py-0.5";

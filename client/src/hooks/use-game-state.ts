@@ -10,7 +10,7 @@ export function useGameState() {
       if (!res.ok) throw new Error("Failed to fetch game state");
       return api.state.get.responses[200].parse(await res.json());
     },
-    refetchInterval: 5000, // Fallback polling in case WS fails
+    refetchInterval: 10000, // Reduced polling frequency to save resources
   });
 }
 
