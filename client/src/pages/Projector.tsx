@@ -54,16 +54,72 @@ export default function Projector() {
   const prevShowResults = useRef(false);
 
   useEffect(() => {
-    if (state?.isResultRevealed && !prevShowResults.current) {
+    if (state?.isResultRevealed && !prevShowResults.current && currentQuiz) {
+      // Find the element for the correct answer to get its position
+      const correctOption = currentQuiz.correctAnswer;
+      const selector = `[data-option="${correctOption}"]`;
+      const element = document.querySelector(selector);
+      
+      let origin = { y: 0.6, x: 0.5 };
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        origin = {
+          x: (rect.left + rect.width / 2) / window.innerWidth,
+          y: (rect.top + rect.height / 2) / window.innerHeight
+        };
+      }
+
+      // 1. Center burst (more particles)
       confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
+        particleCount: 200,
+        spread: 100,
+        origin: origin,
+        colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
+        scalar: 1.2
       });
+
+      // 2. Side bursts for extra flair
+      setTimeout(() => {
+        confetti({
+          particleCount: 100,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.6 }
+        });
+        confetti({
+          particleCount: 100,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.6 }
+        });
+      }, 200);
+
+      // 3. Continuous shower for a few seconds
+      const end = Date.now() + 2000;
+      const frame = () => {
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#ff0000', '#ffff00']
+        });
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#0000ff', '#00ff00']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
     }
     prevShowResults.current = !!state?.isResultRevealed;
-  }, [state?.isResultRevealed]);
+  }, [state?.isResultRevealed, currentQuiz]);
   
   const currentQuiz = quizzes?.find((q) => q.id === state?.currentQuizId);
   const showResults = state?.isResultRevealed;
@@ -187,6 +243,7 @@ export default function Projector() {
               <motion.div
                 key={opt.label}
                 layout
+                data-option={opt.label}
                 className={cn(
                   "relative rounded-xl p-3 flex flex-col justify-start h-full min-h-0 border-2 transition-all duration-500 overflow-hidden",
                   opt.label === "A" ? "border-red-500 bg-red-500/10" :
@@ -234,7 +291,7 @@ export default function Projector() {
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0, opacity: 0 }}
                           className={cn(
-                            "rounded-full font-bold shadow-sm border whitespace-nowrap leading-none",
+                            "rounded-full font-bold shadow-sm border whitespace-nowrap leading-none shrink-0 overflow-visible",
                             fontSizeClass,
                             showResults && isCorrect ? "bg-green-100 border-green-200 text-green-800" : "bg-white/10 border-white/20 text-white"
                           )}

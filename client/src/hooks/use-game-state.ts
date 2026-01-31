@@ -18,6 +18,9 @@ export function useUpdateGameState() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: AdminUpdateStateRequest) => {
+      // Optimistic update
+      queryClient.setQueryData([api.state.get.path], (old: any) => old ? { ...old, ...data } : undefined);
+
       const res = await fetch(api.state.update.path, {
         method: api.state.update.method,
         headers: { "Content-Type": "application/json" },
@@ -26,8 +29,8 @@ export function useUpdateGameState() {
       if (!res.ok) throw new Error("Failed to update state");
       return api.state.update.responses[200].parse(await res.json());
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.state.get.path] });
+    onSuccess: (newState) => {
+      queryClient.setQueryData([api.state.get.path], newState);
     },
   });
 }
