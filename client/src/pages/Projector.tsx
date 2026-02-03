@@ -100,46 +100,45 @@ export default function Projector() {
 
       // 1. Center burst from the correct option
       confetti({
-        particleCount: 250,
-        spread: 120,
+        particleCount: 150,
+        spread: 100,
         origin: origin,
         colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
-        scalar: 1.5,
-        gravity: 0.8,
-        drift: 0,
-        ticks: 400
+        scalar: 1.2,
+        gravity: 1.0,
+        ticks: 200
       });
 
-      // 2. Extra side bursts for maximum flair
+      // 2. Extra side bursts
       setTimeout(() => {
         confetti({
-          particleCount: 150,
+          particleCount: 80,
           angle: 60,
-          spread: 80,
+          spread: 60,
           origin: { x: 0, y: 0.6 },
           colors: ['#ffdd00', '#ff0000', '#ff00ff']
         });
         confetti({
-          particleCount: 150,
+          particleCount: 80,
           angle: 120,
-          spread: 80,
+          spread: 60,
           origin: { x: 1, y: 0.6 },
           colors: ['#00ff00', '#0000ff', '#00ffff']
         });
-      }, 200);
+      }, 150);
 
-      // 3. Continuous celebration shower
-      const end = Date.now() + 3000;
+      // 3. Shorter celebration shower
+      const end = Date.now() + 1500;
       const frame = () => {
         confetti({
-          particleCount: 3,
+          particleCount: 2,
           angle: 60,
           spread: 55,
           origin: { x: 0 },
           colors: ['#ff0000', '#ffff00']
         });
         confetti({
-          particleCount: 3,
+          particleCount: 2,
           angle: 120,
           spread: 55,
           origin: { x: 1 },
@@ -284,34 +283,29 @@ export default function Projector() {
                 </div>
 
                 {/* Participant Names */}
-                <div className="flex flex-wrap gap-1 mt-1 overflow-y-auto content-start scrollbar-hide flex-1">
-                  <AnimatePresence>
-                    {choiceResponses.map((r) => {
-                      const nameCount = choiceResponses.length;
-                      let fontSizeClass = "text-sm px-1.5 py-0.5";
-                      if (nameCount > 150) fontSizeClass = "text-[6px] px-0.5 py-0";
-                      else if (nameCount > 100) fontSizeClass = "text-[8px] px-1 py-0";
-                      else if (nameCount > 60) fontSizeClass = "text-[9px] px-1 py-0";
-                      else if (nameCount > 40) fontSizeClass = "text-[10px] px-1 py-0";
-                      else if (nameCount > 20) fontSizeClass = "text-xs px-1.5 py-0.5";
-                      
-                      return (
-                        <motion.span
-                          key={r.userId}
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          className={cn(
-                            "rounded-full font-bold shadow-sm border whitespace-nowrap leading-none",
-                            fontSizeClass,
-                            showResults && isCorrect ? "bg-green-100 border-green-200 text-green-800" : "bg-white/10 border-white/20 text-white"
-                          )}
-                        >
-                          {r.userName}
-                        </motion.span>
-                      );
-                    })}
-                  </AnimatePresence>
+                <div className="flex flex-wrap gap-1 mt-1 overflow-hidden content-start flex-1">
+                  {choiceResponses.map((r) => {
+                    const nameCount = choiceResponses.length;
+                    let fontSizeClass = "text-sm px-1.5 py-0.5";
+                    if (nameCount > 150) fontSizeClass = "text-[6px] px-0.5 py-0";
+                    else if (nameCount > 100) fontSizeClass = "text-[8px] px-1 py-0";
+                    else if (nameCount > 60) fontSizeClass = "text-[9px] px-1 py-0";
+                    else if (nameCount > 40) fontSizeClass = "text-[10px] px-1 py-0";
+                    else if (nameCount > 20) fontSizeClass = "text-xs px-1.5 py-0.5";
+                    
+                    return (
+                      <span
+                        key={r.userId}
+                        className={cn(
+                          "rounded-full font-bold shadow-sm border whitespace-nowrap leading-none transition-all duration-300",
+                          fontSizeClass,
+                          showResults && isCorrect ? "bg-green-100 border-green-200 text-green-800" : "bg-white/10 border-white/20 text-white"
+                        )}
+                      >
+                        {r.userName}
+                      </span>
+                    );
+                  })}
                 </div>
 
                 {/* Result Bar */}
