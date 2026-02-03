@@ -8,6 +8,7 @@ import { User, WS_EVENTS } from "@shared/schema";
 import { Loader2, Trophy } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
+import { queryClient } from "@/lib/queryClient";
 
 import { Maximize, Minimize } from "lucide-react";
 
@@ -43,15 +44,14 @@ export default function Projector() {
   const prevShowResults = useRef(false);
 
   useWebSocket((message) => {
-    if (message.type === WS_EVENTS.STATE_UPDATE) {
-      refetchState();
-      refetchResponses();
+    if (message.type === WS_EVENTS.STATE_UPDATE || message.type === WS_EVENTS.RESPONSE_UPDATE || message.type === WS_EVENTS.QUIZ_UPDATE) {
+      // Invalidate queries for immediate refetch across the app
+      queryClient.invalidateQueries({ queryKey: ['/api/state'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/responses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/quizzes'] });
     }
     if (message.type === WS_EVENTS.SCORE_UPDATE) {
       setLeaderboard(message.payload as User[]);
-    }
-    if (message.type === WS_EVENTS.RESPONSE_UPDATE) {
-      refetchResponses();
     }
   });
 
