@@ -37,9 +37,21 @@ export default function Projector() {
   const { data: initialLeaderboard } = useGameState(); // We'll use a separate state for leaderboard
   const [leaderboard, setLeaderboard] = useState<User[]>([]);
 
+  const { data: state, refetch: refetchState } = useGameState();
+  const { data: quizzes } = useQuizzes();
+  const { data: responses, refetch: refetchResponses } = useAllResponses();
+  const prevShowResults = useRef(false);
+
   useWebSocket((message) => {
+    if (message.type === WS_EVENTS.STATE_UPDATE) {
+      refetchState();
+      refetchResponses();
+    }
     if (message.type === WS_EVENTS.SCORE_UPDATE) {
       setLeaderboard(message.payload as User[]);
+    }
+    if (message.type === WS_EVENTS.RESPONSE_UPDATE) {
+      refetchResponses();
     }
   });
 
@@ -48,10 +60,28 @@ export default function Projector() {
     fetch('/api/leaderboard').then(res => res.json()).then(data => setLeaderboard(data));
   }, []);
 
-  const { data: state } = useGameState();
-  const { data: quizzes } = useQuizzes();
-  const { data: responses } = useAllResponses();
-  const prevShowResults = useRef(false);
+  const currentQuiz = quizzes?.find((q) => q.id === state?.currentQuizId);
+  const showResults = state?.isResultRevealed;
+
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (state?.timerStartedAt && currentQuiz) {
+      const startTime = new Date(state.timerStartedAt).getTime();
+      const limit = currentQuiz.timeLimit * 1000;
+      
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const diff = Math.max(0, Math.ceil((startTime + limit - now) / 1000));
+        setTimeLeft(diff);
+        if (diff <= 0) clearInterval(interval);
+      }, 100);
+
+      return () => clearInterval(interval);
+    } else {
+      setTimeLeft(null);
+    }
+  }, [state?.timerStartedAt, currentQuiz]);
 
   useEffect(() => {
     if (state?.isResultRevealed && !prevShowResults.current && currentQuiz) {
@@ -94,29 +124,6 @@ export default function Projector() {
     }
     prevShowResults.current = !!state?.isResultRevealed;
   }, [state?.isResultRevealed, currentQuiz]);
-  
-  const currentQuiz = quizzes?.find((q) => q.id === state?.currentQuizId);
-  const showResults = state?.isResultRevealed;
-
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (state?.timerStartedAt && currentQuiz) {
-      const startTime = new Date(state.timerStartedAt).getTime();
-      const limit = currentQuiz.timeLimit * 1000;
-      
-      const interval = setInterval(() => {
-        const now = Date.now();
-        const diff = Math.max(0, Math.ceil((startTime + limit - now) / 1000));
-        setTimeLeft(diff);
-        if (diff <= 0) clearInterval(interval);
-      }, 100);
-
-      return () => clearInterval(interval);
-    } else {
-      setTimeLeft(null);
-    }
-  }, [state?.timerStartedAt, currentQuiz]);
 
   // Derive connected users from responses? 
   // Ideally backend provides a list of online users, but for now we visualize based on responses + unique IDs
@@ -247,8 +254,8 @@ export default function Projector() {
                 </div>
 
                 {/* Participant Names */}
-                <div className="flex flex-wrap gap-1 mt-1 overflow-hidden content-start flex-1">
-                  <AnimatePresence initial={false}>
+                <div className="flex flex-wrap gap-1 mt-1 overflow-y-auto content-start scrollbar-hide flex-1">
+                  <AnimatePresence>
                     {choiceResponses.map((r) => {
                       const nameCount = choiceResponses.length;
                       let fontSizeClass = "text-sm px-1.5 py-0.5";
@@ -265,7 +272,7 @@ export default function Projector() {
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0, opacity: 0 }}
                           className={cn(
-                            "rounded-full font-bold shadow-sm border whitespace-nowrap leading-none shrink-0 overflow-visible",
+                            "rounded-full font-bold shadow-sm border whitespace-nowrap leading-none",
                             fontSizeClass,
                             showResults && isCorrect ? "bg-green-100 border-green-200 text-green-800" : "bg-white/10 border-white/20 text-white"
                           )}

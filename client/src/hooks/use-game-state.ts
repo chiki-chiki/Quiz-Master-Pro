@@ -10,7 +10,7 @@ export function useGameState() {
       if (!res.ok) throw new Error("Failed to fetch game state");
       return api.state.get.responses[200].parse(await res.json());
     },
-    refetchInterval: 10000, // Reduced polling frequency to save resources
+    refetchInterval: 5000, // Fallback polling in case WS fails
   });
 }
 
@@ -18,9 +18,6 @@ export function useUpdateGameState() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: AdminUpdateStateRequest) => {
-      // Optimistic update
-      queryClient.setQueryData([api.state.get.path], (old: any) => old ? { ...old, ...data } : undefined);
-
       const res = await fetch(api.state.update.path, {
         method: api.state.update.method,
         headers: { "Content-Type": "application/json" },
@@ -29,8 +26,8 @@ export function useUpdateGameState() {
       if (!res.ok) throw new Error("Failed to update state");
       return api.state.update.responses[200].parse(await res.json());
     },
-    onSuccess: (newState) => {
-      queryClient.setQueryData([api.state.get.path], newState);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.state.get.path] });
     },
   });
 }
