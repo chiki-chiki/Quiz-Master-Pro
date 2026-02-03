@@ -98,29 +98,59 @@ export default function Projector() {
         };
       }
 
-      // Reduced particle counts for performance
+      // 1. Center burst from the correct option
       confetti({
-        particleCount: 100,
-        spread: 70,
+        particleCount: 250,
+        spread: 120,
         origin: origin,
         colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'],
-        scalar: 1.2
+        scalar: 1.5,
+        gravity: 0.8,
+        drift: 0,
+        ticks: 400
       });
 
+      // 2. Extra side bursts for maximum flair
       setTimeout(() => {
         confetti({
-          particleCount: 50,
+          particleCount: 150,
           angle: 60,
-          spread: 55,
-          origin: { x: 0, y: 0.6 }
+          spread: 80,
+          origin: { x: 0, y: 0.6 },
+          colors: ['#ffdd00', '#ff0000', '#ff00ff']
         });
         confetti({
-          particleCount: 50,
+          particleCount: 150,
           angle: 120,
-          spread: 55,
-          origin: { x: 1, y: 0.6 }
+          spread: 80,
+          origin: { x: 1, y: 0.6 },
+          colors: ['#00ff00', '#0000ff', '#00ffff']
         });
       }, 200);
+
+      // 3. Continuous celebration shower
+      const end = Date.now() + 3000;
+      const frame = () => {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#ff0000', '#ffff00']
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#0000ff', '#00ff00']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
     }
     prevShowResults.current = !!state?.isResultRevealed;
   }, [state?.isResultRevealed, currentQuiz]);
