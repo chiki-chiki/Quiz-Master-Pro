@@ -175,7 +175,7 @@ export default function Projector() {
 
   const totalResponses = responses?.filter(r => r.quizId === currentQuiz?.id).length || 0;
 
-  if (!currentQuiz) {
+  if (!currentQuiz && !state?.currentQuizId) {
     return (
       <Layout className="flex items-center justify-center h-screen bg-black text-white">
         <div className="text-center space-y-8 animate-pulse">
@@ -186,6 +186,18 @@ export default function Projector() {
           <div className="mt-12 p-8 border-4 border-white/20 rounded-3xl inline-block">
             <span className="text-6xl font-mono tracking-widest">WAITING...</span>
           </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Ensure we don't show blank screen if data is loading but we have a quiz ID
+  if (!currentQuiz && state?.currentQuizId) {
+    return (
+      <Layout className="flex items-center justify-center h-screen bg-neutral-900 text-white">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
+          <p className="text-2xl font-bold animate-pulse">Loading Question...</p>
         </div>
       </Layout>
     );
