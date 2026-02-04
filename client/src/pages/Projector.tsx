@@ -47,7 +47,7 @@ export default function Projector() {
     // Force lowercase for comparison to avoid case-sensitivity issues
     const type = message.type.toLowerCase();
     
-    if (type === 'state_update' || type === 'response_update' || type === 'quiz_update') {
+    if (type === WS_EVENTS.STATE_UPDATE || type === WS_EVENTS.RESPONSE_UPDATE || type === WS_EVENTS.QUIZ_UPDATE) {
       // Direct refetch with no delay
       refetchState();
       refetchResponses();
@@ -56,7 +56,7 @@ export default function Projector() {
       queryClient.invalidateQueries({ queryKey: ['/api/responses'] });
       queryClient.invalidateQueries({ queryKey: ['/api/quizzes'] });
     }
-    if (type === 'score_update') {
+    if (type === WS_EVENTS.SCORE_UPDATE) {
       setLeaderboard(message.payload as User[]);
     }
   });
