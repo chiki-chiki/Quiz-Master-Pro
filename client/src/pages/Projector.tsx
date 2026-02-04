@@ -44,7 +44,10 @@ export default function Projector() {
   const prevShowResults = useRef(false);
 
   useWebSocket((message) => {
-    if (message.type === WS_EVENTS.STATE_UPDATE || message.type === WS_EVENTS.RESPONSE_UPDATE || message.type === WS_EVENTS.QUIZ_UPDATE) {
+    // Force lowercase for comparison to avoid case-sensitivity issues
+    const type = message.type.toLowerCase();
+    
+    if (type === 'state_update' || type === 'response_update' || type === 'quiz_update') {
       // Direct refetch with no delay
       refetchState();
       refetchResponses();
@@ -53,7 +56,7 @@ export default function Projector() {
       queryClient.invalidateQueries({ queryKey: ['/api/responses'] });
       queryClient.invalidateQueries({ queryKey: ['/api/quizzes'] });
     }
-    if (message.type === WS_EVENTS.SCORE_UPDATE) {
+    if (type === 'score_update') {
       setLeaderboard(message.payload as User[]);
     }
   });
