@@ -45,7 +45,10 @@ export default function Projector() {
 
   useWebSocket((message) => {
     if (message.type === WS_EVENTS.STATE_UPDATE || message.type === WS_EVENTS.RESPONSE_UPDATE || message.type === WS_EVENTS.QUIZ_UPDATE) {
-      // Invalidate queries for immediate refetch across the app
+      // Direct refetch with no delay
+      refetchState();
+      refetchResponses();
+      // Also invalidate for global consistency
       queryClient.invalidateQueries({ queryKey: ['/api/state'] });
       queryClient.invalidateQueries({ queryKey: ['/api/responses'] });
       queryClient.invalidateQueries({ queryKey: ['/api/quizzes'] });
@@ -297,7 +300,7 @@ export default function Projector() {
                       <span
                         key={r.userId}
                         className={cn(
-                          "rounded-full font-bold shadow-sm border whitespace-nowrap leading-none transition-all duration-300",
+                          "rounded-full font-bold shadow-sm border whitespace-nowrap leading-none transition-none",
                           fontSizeClass,
                           showResults && isCorrect ? "bg-green-100 border-green-200 text-green-800" : "bg-white/10 border-white/20 text-white"
                         )}
