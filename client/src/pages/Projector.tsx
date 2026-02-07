@@ -5,10 +5,10 @@ import { Layout } from "@/components/ui/Layout";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { User, WS_EVENTS } from "@shared/schema";
-import { Loader2, Trophy } from "lucide-react";
+import { Loader2, Trophy, Keyboard } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import confetti from "canvas-confetti";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 import { Maximize, Minimize } from "lucide-react";
 
@@ -42,6 +42,57 @@ export default function Projector() {
   const { data: quizzes } = useQuizzes();
   const { data: responses, refetch: refetchResponses } = useAllResponses();
   const prevShowResults = useRef(false);
+
+  // Keyboard navigation handler
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (!state) return;
+
+      if (e.key === "Enter" || e.key === " ") {
+        // Toggle Reveal
+        await apiRequest("POST", "/api/state", {
+          ...state,
+          isResultRevealed: !state.isResultRevealed
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/state"] });
+      } else if (e.key === "ArrowRight" || e.key === "n") {
+        // Next Quiz
+        const currentIndex = quizzes?.findIndex(q => q.id === state.currentQuizId) ?? -1;
+        if (quizzes && currentIndex < quizzes.length - 1) {
+          const nextQuiz = quizzes[currentIndex + 1];
+          await apiRequest("POST", "/api/state", {
+            currentQuizId: nextQuiz.id,
+            isResultRevealed: false,
+            timerStartedAt: new Date().toISOString()
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/state"] });
+        }
+      } else if (e.key === "ArrowLeft" || e.key === "p") {
+        // Previous Quiz
+        const currentIndex = quizzes?.findIndex(q => q.id === state.currentQuizId) ?? -1;
+        if (quizzes && currentIndex > 0) {
+          const prevQuiz = quizzes[currentIndex - 1];
+          await apiRequest("POST", "/api/state", {
+            currentQuizId: prevQuiz.id,
+            isResultRevealed: false,
+            timerStartedAt: new Date().toISOString()
+          });
+          queryClient.invalidateQueries({ queryKey: ["/api/state"] });
+        }
+      } else if (e.key === "r") {
+        // Reset/Restart current quiz timer
+        await apiRequest("POST", "/api/state", {
+          ...state,
+          isResultRevealed: false,
+          timerStartedAt: new Date().toISOString()
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/state"] });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [state, quizzes]);
 
   useWebSocket((message) => {
     const type = message.type.toLowerCase();
