@@ -46,15 +46,16 @@ export default function Projector() {
   useWebSocket((message) => {
     const type = message.type.toLowerCase();
     
-    if (type === WS_EVENTS.STATE_UPDATE || type === WS_EVENTS.QUIZ_UPDATE) {
-      // Invalidate everything for question switch
-      queryClient.resetQueries({ queryKey: ['/api/state'] });
-      queryClient.resetQueries({ queryKey: ['/api/responses'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/quizzes'] });
-    } else if (type === WS_EVENTS.RESPONSE_UPDATE) {
-      // Only invalidate responses for live count
+    if (type === 'state_update' || type === 'quiz_update') {
+      // Use invalidate instead of reset to prevent UI flicker during reveal
+      // This keeps the current data on screen while the new data is being fetched
+      queryClient.invalidateQueries({ queryKey: ['/api/state'] });
       queryClient.invalidateQueries({ queryKey: ['/api/responses'] });
-    } else if (type === WS_EVENTS.SCORE_UPDATE) {
+      queryClient.invalidateQueries({ queryKey: ['/api/quizzes'] });
+    } else if (type === 'response_update') {
+      // Only invalidate responses for live count updates
+      queryClient.invalidateQueries({ queryKey: ['/api/responses'] });
+    } else if (type === 'score_update') {
       setLeaderboard(message.payload as User[]);
     }
   });
@@ -165,17 +166,18 @@ export default function Projector() {
   
   // Group responses for chart if results revealed
   const stats = { A: 0, B: 0, C: 0, D: 0 };
-  if (responses && currentQuiz) {
+  if (responses && state?.currentQuizId) {
     responses.forEach(r => {
-      if (r.quizId === currentQuiz.id && r.selection in stats) {
+      if (r.quizId === state.currentQuizId && r.selection in stats) {
         stats[r.selection as keyof typeof stats]++;
       }
     });
   }
 
-  const totalResponses = responses?.filter(r => r.quizId === currentQuiz?.id).length || 0;
+  const totalResponses = responses?.filter(r => r.quizId === state?.currentQuizId).length || 0;
 
-  if (!currentQuiz && !state?.currentQuizId) {
+  // Show waiting screen ONLY if there is no current quiz selected in state
+  if (!state?.currentQuizId) {
     return (
       <Layout className="flex items-center justify-center h-screen bg-black text-white">
         <div className="text-center space-y-8 animate-pulse">
@@ -191,8 +193,9 @@ export default function Projector() {
     );
   }
 
-  // Ensure we don't show blank screen if data is loading but we have a quiz ID
-  if (!currentQuiz && state?.currentQuizId) {
+  // Show loading screen if we HAVE a quiz ID but the data is not yet available (switching questions)
+  // This will NOT show during reveal because currentQuiz remains defined
+  if (!currentQuiz) {
     return (
       <Layout className="flex items-center justify-center h-screen bg-neutral-900 text-white">
         <div className="flex flex-col items-center gap-4">
@@ -263,7 +266,7 @@ export default function Projector() {
           {options.map((opt) => {
             const isCorrect = currentQuiz.correctAnswer === opt.label;
             const isDimmed = showResults && !isCorrect;
-            const choiceResponses = responses?.filter(r => r.quizId === currentQuiz.id && r.selection === opt.label) || [];
+            const choiceResponses = responses?.filter(r => r.quizId === currentQuiz?.id && r.selection === opt.label) || [];
             
             return (
               <motion.div
@@ -377,7 +380,7 @@ export default function Projector() {
                 ))}
               </div>
             ) : (
-              responses?.filter(r => r.quizId === currentQuiz.id).map((response, i) => (
+              responses?.filter(r => r.quizId === currentQuiz?.id).map((response, i) => (
                 <motion.div
                   key={`${response.userId}-${i}`}
                   initial={{ x: 20, opacity: 0 }}
