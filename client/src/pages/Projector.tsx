@@ -48,9 +48,9 @@ export default function Projector() {
     
     if (type === 'state_update' || type === 'quiz_update') {
       // Use invalidate instead of reset to prevent UI flicker during reveal
-      // This keeps the current data on screen while the new data is being fetched
+      // However, we want to clear responses immediately when switching to a NEW question to speed up the transition
       queryClient.invalidateQueries({ queryKey: ['/api/state'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/responses'] });
+      queryClient.resetQueries({ queryKey: ['/api/responses'] });
       queryClient.invalidateQueries({ queryKey: ['/api/quizzes'] });
     } else if (type === 'response_update') {
       // Only invalidate responses for live count updates
