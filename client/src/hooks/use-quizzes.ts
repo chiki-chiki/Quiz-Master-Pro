@@ -11,6 +11,8 @@ export function useQuizzes() {
       if (!res.ok) throw new Error("Failed to fetch quizzes");
       return api.quizzes.list.responses[200].parse(await res.json());
     },
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 

@@ -54,7 +54,8 @@ export default function Projector() {
           ...state,
           isResultRevealed: !state.isResultRevealed
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/state"] });
+        // We refetch locally instead of just invalidating to speed up
+        queryClient.refetchQueries({ queryKey: ["/api/state"] });
       } else if (e.key === "ArrowRight" || e.key === "n") {
         // Next Quiz
         const currentIndex = quizzes?.findIndex(q => q.id === state.currentQuizId) ?? -1;
@@ -65,7 +66,7 @@ export default function Projector() {
             isResultRevealed: false,
             timerStartedAt: new Date().toISOString()
           });
-          queryClient.invalidateQueries({ queryKey: ["/api/state"] });
+          queryClient.refetchQueries({ queryKey: ["/api/state"] });
         }
       } else if (e.key === "ArrowLeft" || e.key === "p") {
         // Previous Quiz
@@ -77,7 +78,7 @@ export default function Projector() {
             isResultRevealed: false,
             timerStartedAt: new Date().toISOString()
           });
-          queryClient.invalidateQueries({ queryKey: ["/api/state"] });
+          queryClient.refetchQueries({ queryKey: ["/api/state"] });
         }
       } else if (e.key === "r") {
         // Reset/Restart current quiz timer
@@ -86,7 +87,7 @@ export default function Projector() {
           isResultRevealed: false,
           timerStartedAt: new Date().toISOString()
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/state"] });
+        queryClient.refetchQueries({ queryKey: ["/api/state"] });
       }
     };
 
@@ -97,11 +98,11 @@ export default function Projector() {
   useWebSocket((message) => {
     const type = message.type.toLowerCase();
     
-    if (type === 'state_update' || type === 'quiz_update') {
-      // Invalidate everything for question switch
-      // We use refetch here instead of invalidate for faster immediate response
+    if (type === 'state_update') {
+      // Only refetch state to trigger local re-render with cached quizzes
       queryClient.refetchQueries({ queryKey: ['/api/state'] });
-      queryClient.resetQueries({ queryKey: ['/api/responses'] });
+    } else if (type === 'quiz_update') {
+      // Refetch quizzes if the underlying list changes
       queryClient.refetchQueries({ queryKey: ['/api/quizzes'] });
     } else if (type === 'response_update') {
       // Only invalidate responses for live count updates
