@@ -77,27 +77,13 @@ export async function registerRoutes(
   const broadcast = (message: WsMessage, excludeClientId?: string) => {
     const data = JSON.stringify(message);
     
-    // Sort clients: Projector first, then others
-    // We determine projector by looking at the URL if possible, 
-    // but a simpler way is to just send to all, but prioritizing order if we had IDs.
-    // For now, let's just implement a slight delay for non-projector clients if we can identify them.
-    
+    // Send to all clients immediately for maximum speed
+    // The previous prioritization was actually adding latency via setTimeout
     wss.clients.forEach((client: any) => {
       if (client.readyState === WebSocket.OPEN) {
-        if (client.isProjector) {
-          client.send(data);
-        }
+        client.send(data);
       }
     });
-
-    // Small delay for participants to ensure projector wins
-    setTimeout(() => {
-      wss.clients.forEach((client: any) => {
-        if (client.readyState === WebSocket.OPEN && !client.isProjector) {
-          client.send(data);
-        }
-      });
-    }, 100);
   };
 
   wss.on("connection", (ws: any, req) => {

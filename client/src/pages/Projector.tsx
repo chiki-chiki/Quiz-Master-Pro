@@ -47,11 +47,11 @@ export default function Projector() {
     const type = message.type.toLowerCase();
     
     if (type === 'state_update' || type === 'quiz_update') {
-      // Use invalidate instead of reset to prevent UI flicker during reveal
-      // However, we want to clear responses immediately when switching to a NEW question to speed up the transition
-      queryClient.invalidateQueries({ queryKey: ['/api/state'] });
+      // Invalidate everything for question switch
+      // We use refetch here instead of invalidate for faster immediate response
+      queryClient.refetchQueries({ queryKey: ['/api/state'] });
       queryClient.resetQueries({ queryKey: ['/api/responses'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/quizzes'] });
+      queryClient.refetchQueries({ queryKey: ['/api/quizzes'] });
     } else if (type === 'response_update') {
       // Only invalidate responses for live count updates
       queryClient.invalidateQueries({ queryKey: ['/api/responses'] });

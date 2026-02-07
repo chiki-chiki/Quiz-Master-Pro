@@ -32,17 +32,17 @@ export function useWebSocket(onMessage?: (message: WsMessage) => void) {
 
           switch (message.type) {
             case WS_EVENTS.STATE_UPDATE:
-              queryClient.invalidateQueries({ queryKey: [api.state.get.path] });
-              queryClient.invalidateQueries({ queryKey: [api.responses.list.path] });
-              queryClient.invalidateQueries({ queryKey: ["/api/leaderboard"] });
+              queryClient.refetchQueries({ queryKey: [api.state.get.path] });
+              queryClient.resetQueries({ queryKey: [api.responses.list.path] });
+              queryClient.refetchQueries({ queryKey: ["/api/leaderboard"] });
               break;
               
             case WS_EVENTS.QUIZ_UPDATE:
-              queryClient.invalidateQueries({ queryKey: [api.quizzes.list.path] });
+              queryClient.refetchQueries({ queryKey: [api.quizzes.list.path] });
               break;
               
             case WS_EVENTS.RESPONSE_UPDATE:
-              queryClient.invalidateQueries({ queryKey: [api.responses.list.path] });
+              queryClient.refetchQueries({ queryKey: [api.responses.list.path] });
               break;
               
             case WS_EVENTS.USER_JOIN:
