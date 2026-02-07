@@ -14,7 +14,8 @@ export function useWebSocket(onMessage?: (message: WsMessage) => void) {
     const wsUrl = `${protocol}//${window.location.host}/ws`;
 
     const connect = () => {
-      const socket = new WebSocket(wsUrl);
+      const isProjector = window.location.pathname === "/projector";
+      const socket = new WebSocket(wsUrl, isProjector ? "projector" : undefined);
       socketRef.current = socket;
 
       socket.onopen = () => {

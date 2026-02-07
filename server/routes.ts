@@ -74,21 +74,44 @@ export async function registerRoutes(
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
   // Broadcast helper
-  const broadcast = (message: WsMessage) => {
+  const broadcast = (message: WsMessage, excludeClientId?: string) => {
     const data = JSON.stringify(message);
-    wss.clients.forEach((client) => {
+    
+    // Sort clients: Projector first, then others
+    // We determine projector by looking at the URL if possible, 
+    // but a simpler way is to just send to all, but prioritizing order if we had IDs.
+    // For now, let's just implement a slight delay for non-projector clients if we can identify them.
+    
+    wss.clients.forEach((client: any) => {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(data);
+        if (client.isProjector) {
+          client.send(data);
+        }
       }
     });
+
+    // Small delay for participants to ensure projector wins
+    setTimeout(() => {
+      wss.clients.forEach((client: any) => {
+        if (client.readyState === WebSocket.OPEN && !client.isProjector) {
+          client.send(data);
+        }
+      });
+    }, 100);
   };
 
-  wss.on('connection', (ws) => {
-    // console.log('Client connected');
+  wss.on("connection", (ws: any, req) => {
+    // Identify if this is a projector client
+    const protocol = ws.protocol; 
+    const url = req.url || "";
+    if (protocol === "projector" || url.includes("role=projector")) {
+      ws.isProjector = true;
+    }
+
+    ws.on("message", (data: string) => {
+      // Message handling
+    });
   });
-
-
-  // === API ROUTES ===
 
   // --- Auth ---
   app.post(api.auth.login.path, async (req, res) => {
